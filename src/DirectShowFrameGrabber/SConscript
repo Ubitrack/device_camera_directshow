@@ -1,0 +1,31 @@
+import glob
+import os.path
+import sys
+
+# import variables from other scons files
+Import( '*' )
+env = masterEnv.Clone()
+
+if sys.platform == "win32" and have_opencv:
+	# take driver name from directory name, replace if you don't like the result
+	driverName = "DirectShowFrameGrabber"
+
+	# automatically glob files
+	headers = globSourceFiles( '*.h' )
+	sources = globSourceFiles( '*.cpp' ) 
+	
+	if have_directshow:
+		env.AppendUnique( **directshow_options )
+	else:
+		sources += globSourceFiles( '*.c' )
+
+	directShow_options = mergeOptions(utcore_options, utvision_options, utdataflow_options, opencv_options, log4cpp_options, boost_options)
+	env.AppendUnique( **directShow_options )	
+	env.AppendUnique( LIBS = [ "ole32", "oleaut32" ] )
+	
+	# compile driver
+	setupSingleComponentBuild(env, sources, driverName,'msWindows')
+	
+	# also create a visual studio project for the driver
+	createVisualStudioProject(env, sources, headers, 'msWindows-DirectShowFrameGrabber')
+	

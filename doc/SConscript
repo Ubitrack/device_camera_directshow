@@ -1,0 +1,6 @@
+import os
+import glob
+Import( '*' )
+
+env = masterEnv.Clone()
+setupDocInstall(env, 'utql', 'utql') 
