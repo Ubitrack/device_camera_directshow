@@ -63,7 +63,7 @@
 #include <utMeasurement/Measurement.h>
 #include <utMeasurement/TimestampSync.h>
 #include <utUtil/OS.h>
-#include <cv.h>
+#include <opencv/cv.h>
 #include <utVision/Image.h>
 #include <utVision/Undistortion.h>
 
