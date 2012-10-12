@@ -19,7 +19,7 @@ if sys.platform == "win32" and have_opencv:
 	else:
 		sources += globSourceFiles( '*.c' )
 
-	directShow_options = mergeOptions(utcore_options, utvision_options, utdataflow_options, opencv_options, log4cpp_options, boost_options, tbb_options)
+	directShow_options = mergeOptions(utcore_options, utvision_options, utdataflow_options, opencv_options, log4cpp_options, boost_options)
 	env.AppendUnique( **directShow_options )	
 	env.AppendUnique( LIBS = [ "ole32", "oleaut32" ] )
 	
