@@ -226,8 +226,8 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	subgraph->m_DataflowAttributes.getAttributeData( "imageHeight", m_desiredHeight );
 	m_desiredName = subgraph->m_DataflowAttributes.getAttributeString( "cameraName" );
 	
-	std::string intrinsicFile = subgraph->m_DataflowAttributes.getAttributeString( "cameraName" );
-	std::string distortionFile = subgraph->m_DataflowAttributes.getAttributeString( "cameraName" );
+	std::string intrinsicFile = subgraph->m_DataflowAttributes.getAttributeString( "intrinsicMatrixFile" );
+	std::string distortionFile = subgraph->m_DataflowAttributes.getAttributeString( "distortionFile" );
 	
 	
 	m_undistorter.reset(new Vision::Undistortion(intrinsicFile, distortionFile));
