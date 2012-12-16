@@ -256,7 +256,7 @@ void DirectShowFrameGrabber::stop()
 {
 	if ( m_running && m_pMediaControl )
 		m_pMediaControl->Pause();
-
+	
 	Component::stop();
 }
 
