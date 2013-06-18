@@ -3,33 +3,7 @@ import sys
 
 Import('*')
 
-# note: include and library directories need to be set in the visual studio ide or globally via INCLUDE and LIBS
-if sys.platform == "win32":
-	#directshow_options = { 'LIBS' : [ 'strmiids', 'ole32' ] }
-
-	# check if directshow compiles
-	#Import( 'masterEnv' )
-	#cenv = masterEnv.Clone()
-	#cenv.AppendUnique( **directshow_options )
-	#conf = Configure( cenv )
-	#have_directshow = conf.CheckLibWithHeader( "strmiids", [ "DShow.h", "qedit.h" ], "C++", 
-	#	"ICaptureGraphBuilder2 *pBuild; "
-	#	"CoCreateInstance(CLSID_CaptureGraphBuilder2, NULL,CLSCTX_INPROC_SERVER, "
-	#	"IID_ICaptureGraphBuilder2, (void**)&pBuild );", 0 )
-	#
-	#conf.Finish()
-	
-	libName = "DIRECTSHOW"
-	compileSettings =  [{} , 'strmiids',[ "DShow.h", "qedit.h" ] , "C++", "ICaptureGraphBuilder2 *pBuild; CoCreateInstance(CLSID_CaptureGraphBuilder2, NULL,CLSCTX_INPROC_SERVER, IID_ICaptureGraphBuilder2, (void**)&pBuild );"]
-		
-	libFinder = standardLibFinder(libName,compileSettings)
-	configHelper = standardLibConfig(libName, libFinder)
-
-	directshow_options = configHelper.getLibraryOptions()
-	have_directshow = configHelper.haveLib()
-else:
-	have_directshow = False
-	directshow_options = {}
-
 # export results
+have_directshow = False
+directshow_options = {}
 Export( [ 'have_directshow', 'directshow_options' ] )
