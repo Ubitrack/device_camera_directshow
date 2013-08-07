@@ -34,7 +34,13 @@
 
 #ifdef HAVE_DIRECTSHOW
 	#include <DShow.h>
+	#pragma include_alias( "dxtrans.h", "qedit.h" )
+	#define __IDxtCompositor_INTERFACE_DEFINED__
+	#define __IDxtAlphaSetter_INTERFACE_DEFINED__
+	#define __IDxtJpeg_INTERFACE_DEFINED__
+	#define __IDxtKey_INTERFACE_DEFINED__
 	#include <qedit.h>
+	#include <strmif.h>
 #else
 	// this include file contains just the directshow interfaces necessary to compile this component
 	// if you need more, install the Windows SDK, the DirectX SDK (old version with dxtrans.h, e.g. August 2007) and
@@ -143,6 +149,17 @@ protected:
 	// desired camera index (e.g. for multiple cameras with the same name as the Vuzix HMD)
 	std::string m_desiredDevicePath;
 
+
+	/** exposure control */
+	int m_cameraExposure;
+
+	/** horizontal flip */
+	bool m_cameraFlipHorizontal;
+
+	/** vertical flip */
+	bool m_cameraFlipVertical;
+
+
 	/** number of frames received */
 	int m_nFrames;
 
@@ -203,9 +220,12 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	, m_divisor( 1 )
 	, m_desiredWidth( 320 )
 	, m_desiredHeight( 240 )
+	, m_cameraExposure( 0 )
 	, m_nFrames( 0 )
 	, m_lastTime( -1e10 )
 	, m_syncer( 1.0 )
+	, m_cameraFlipHorizontal( false )
+	, m_cameraFlipVertical( false )
 	//, m_undistorter( *subgraph )
 	, m_outPort( "Output", *this )
 	, m_colorOutPort( "ColorOutput", *this )
@@ -230,6 +250,12 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	m_desiredDevicePath = subgraph->m_DataflowAttributes.getAttributeString( "devicePath" );
 	m_desiredName = subgraph->m_DataflowAttributes.getAttributeString( "cameraName" );
 	
+	subgraph->m_DataflowAttributes.getAttributeData( "cameraExposure", m_cameraExposure );
+	// more properties here ..
+	m_cameraFlipHorizontal = subgraph->m_DataflowAttributes.getAttributeString( "cameraFlipHorizontal" ) == "true";
+	m_cameraFlipVertical = subgraph->m_DataflowAttributes.getAttributeString( "cameraFlipVertical" ) == "true";
+
+
 	std::string intrinsicFile = subgraph->m_DataflowAttributes.getAttributeString( "intrinsicMatrixFile" );
 	std::string distortionFile = subgraph->m_DataflowAttributes.getAttributeString( "distortionFile" );
 	
@@ -423,6 +449,9 @@ void DirectShowFrameGrabber::initGraph()
 	pSampleGrabber->SetBufferSamples( FALSE );
 	pSampleGrabber->SetCallback( this, 0 ); // 0 = Use the SampleCB callback method.
 
+
+
+
 	// make it picky on media types
 	AM_MEDIA_TYPE mediaType;
 	memset( &mediaType, 0, sizeof( mediaType ) );
@@ -460,6 +489,51 @@ void DirectShowFrameGrabber::initGraph()
 	double fps = (1.0 / pVidInfo->AvgTimePerFrame) * 10000000.0;
 	LOG4CPP_INFO( logger, "Image dimensions: " << m_sampleWidth << "x" << m_sampleHeight << " FPS: " << fps );
 	// TODO: FreeMediaType( &mediaType );
+
+
+
+#ifdef HAVE_DIRECTSHOW
+	/* additionally control camera parameters infos at:
+	 * http://msdn.microsoft.com/en-us/library/dd318253(v=vs.85).aspx
+	 */
+	IAMCameraControl *pCameraControl; 
+	//HRESULT hr; 
+	hr = pCaptureFilter->QueryInterface(IID_IAMCameraControl, (void **)&pCameraControl); 
+	if ( SUCCEEDED(hr) ) {
+	  //hr = pCameraControl->GetRange(CameraControl_Exposure,
+			//						NULL, // min
+			//						NULL, // max
+			//						NULL, // minstep
+			//						&defaultExposureValue, // default
+			//						NULL); // capflags
+		if (m_cameraExposure != 0) {
+			hr = pCameraControl->Set(CameraControl_Exposure, // property
+									m_cameraExposure, // value
+									CameraControl_Flags_Manual); 
+		}
+	}
+
+	// flipping
+	IAMVideoControl *pVideoControl;
+	IPin *pCaptPin;
+	IUnknown *pUnk1;
+	hr = pCaptureFilter->QueryInterface( &pVideoControl );    
+	hr = pCaptureFilter->QueryInterface(&pUnk1 );
+	hr = pBuild->FindPin(pUnk1, PINDIR_OUTPUT, &PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, FALSE, 0, &pCaptPin);
+	if (SUCCEEDED(hr) ) {
+		//hr = pCaptureFilter->QueryInterface(IID_IAMVideoControl, (void **)&pVideoControl);
+		long lMode = 0;
+		hr = pVideoControl->GetMode(pCaptPin, &lMode);
+		if (m_cameraFlipHorizontal) 
+			lMode |= VideoControlFlag_FlipHorizontal;
+		if (m_cameraFlipVertical)
+			lMode |= VideoControlFlag_FlipVertical;
+		hr = pVideoControl->SetMode(pCaptPin, lMode);		
+		LOG4CPP_INFO( logger, "flip image: " << lMode );
+	}
+
+#endif
+
 
 	// start stream
 	pGraph.QueryInterface< IMediaControl >( m_pMediaControl );
