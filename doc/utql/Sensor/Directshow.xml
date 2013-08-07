@@ -73,6 +73,12 @@
 					a camera, if multiple cameras are available.</h:p>
 				</Description>
 			</Attribute>
+			<Attribute name="devicePath" default="" xsi:type="StringAttributeDeclarationType" displayName="camera device path">
+				<Description>
+					<h:p>Substring of the device path of the camera. 
+					This will be used to select a camera, if multiple cameras are available. </h:p>
+				</Description>
+			</Attribute>
             <Attribute name="intrinsicMatrixFile" default="CamMatrix.calib" displayName="Intrinsic matrix file" xsi:type="PathAttributeDeclarationType">
                 <Description>
                 	<h:p>Optional file where the camera intrinsic matrix will be read from. This is necessary to 
@@ -143,6 +149,12 @@
 				<Description>
 					<h:p>Substring of the camera name as displayed by Windows. This will be used to select
 					a camera, if multiple cameras are available.</h:p>
+				</Description>
+			</Attribute>
+			<Attribute name="devicePath" default="" xsi:type="StringAttributeDeclarationType" displayName="camera device path">
+				<Description>
+					<h:p>Substring of the device path of the camera. 
+					This will be used to select a camera, if multiple cameras are available. </h:p>
 				</Description>
 			</Attribute>
 		</DataflowConfiguration>

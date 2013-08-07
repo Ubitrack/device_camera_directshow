@@ -140,6 +140,9 @@ protected:
 	// desired camera name
 	std::string m_desiredName;
 
+	// desired camera index (e.g. for multiple cameras with the same name as the Vuzix HMD)
+	std::string m_desiredDevicePath;
+
 	/** number of frames received */
 	int m_nFrames;
 
@@ -224,6 +227,7 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	subgraph->m_DataflowAttributes.getAttributeData( "divisor", m_divisor );
 	subgraph->m_DataflowAttributes.getAttributeData( "imageWidth", m_desiredWidth );
 	subgraph->m_DataflowAttributes.getAttributeData( "imageHeight", m_desiredHeight );
+	m_desiredDevicePath = subgraph->m_DataflowAttributes.getAttributeString( "devicePath" );
 	m_desiredName = subgraph->m_DataflowAttributes.getAttributeString( "cameraName" );
 	
 	std::string intrinsicFile = subgraph->m_DataflowAttributes.getAttributeString( "intrinsicMatrixFile" );
@@ -288,6 +292,15 @@ void DirectShowFrameGrabber::initGraph()
 			continue;  // Skip this one, maybe the next one will work.
 		} 
 
+		// Find the device of the camera.
+		VARIANT varDevicePath;
+		VariantInit( &varDevicePath );
+		hr = pPropBag->Read( L"DevicePath", &varDevicePath, 0 );
+		char sDevicePath[ 128 ];
+		if ( SUCCEEDED( hr ) )
+			// could be optimized somehow ..
+			WideCharToMultiByte( CP_ACP, 0, varDevicePath.bstrVal, -1, sDevicePath, 128, 0, 0 );
+
 		// Find the description or friendly name.
 		VARIANT varName;
 		VariantInit( &varName );
@@ -295,17 +308,21 @@ void DirectShowFrameGrabber::initGraph()
 		if ( FAILED( hr ) )
 			hr = pPropBag->Read( L"FriendlyName", &varName, 0 );
 
+		
+
 		if ( SUCCEEDED( hr ) )
 		{
 			char sName[ 128 ];
 			WideCharToMultiByte( CP_ACP, 0, varName.bstrVal, -1, sName, 128, 0, 0 );
-			LOG4CPP_INFO( logger, "Possible capture device: " << &sName[0] );
+			LOG4CPP_INFO( logger, "Possible capture device: " << &sName[0] << " device path: " << sDevicePath );
 
 			// select device based on name
 			if ( !m_desiredName.empty() && strstr( sName, m_desiredName.c_str() ) )
 			{
-				sSelectedCamera = sName;
-				pSelectedMoniker = pMoniker;
+				if ( !m_desiredDevicePath.empty() && strstr( sDevicePath, m_desiredDevicePath.c_str() ) ) {
+					sSelectedCamera = sName;
+					pSelectedMoniker = pMoniker;
+				}
 			}
 
 			VariantClear( &varName ); 
