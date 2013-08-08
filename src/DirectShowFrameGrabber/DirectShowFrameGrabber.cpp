@@ -153,13 +153,6 @@ protected:
 	/** exposure control */
 	int m_cameraExposure;
 
-	/** horizontal flip */
-	bool m_cameraFlipHorizontal;
-
-	/** vertical flip */
-	bool m_cameraFlipVertical;
-
-
 	/** number of frames received */
 	int m_nFrames;
 
@@ -224,8 +217,6 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	, m_nFrames( 0 )
 	, m_lastTime( -1e10 )
 	, m_syncer( 1.0 )
-	, m_cameraFlipHorizontal( false )
-	, m_cameraFlipVertical( false )
 	//, m_undistorter( *subgraph )
 	, m_outPort( "Output", *this )
 	, m_colorOutPort( "ColorOutput", *this )
@@ -252,9 +243,6 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	
 	subgraph->m_DataflowAttributes.getAttributeData( "cameraExposure", m_cameraExposure );
 	// more properties here ..
-	m_cameraFlipHorizontal = subgraph->m_DataflowAttributes.getAttributeString( "cameraFlipHorizontal" ) == "true";
-	m_cameraFlipVertical = subgraph->m_DataflowAttributes.getAttributeString( "cameraFlipVertical" ) == "true";
-
 
 	std::string intrinsicFile = subgraph->m_DataflowAttributes.getAttributeString( "intrinsicMatrixFile" );
 	std::string distortionFile = subgraph->m_DataflowAttributes.getAttributeString( "distortionFile" );
@@ -512,26 +500,6 @@ void DirectShowFrameGrabber::initGraph()
 									CameraControl_Flags_Manual); 
 		}
 	}
-
-	// flipping
-	IAMVideoControl *pVideoControl;
-	IPin *pCaptPin;
-	IUnknown *pUnk1;
-	hr = pCaptureFilter->QueryInterface( &pVideoControl );    
-	hr = pCaptureFilter->QueryInterface(&pUnk1 );
-	hr = pBuild->FindPin(pUnk1, PINDIR_OUTPUT, &PIN_CATEGORY_CAPTURE, &MEDIATYPE_Video, FALSE, 0, &pCaptPin);
-	if (SUCCEEDED(hr) ) {
-		//hr = pCaptureFilter->QueryInterface(IID_IAMVideoControl, (void **)&pVideoControl);
-		long lMode = 0;
-		hr = pVideoControl->GetMode(pCaptPin, &lMode);
-		if (m_cameraFlipHorizontal) 
-			lMode |= VideoControlFlag_FlipHorizontal;
-		if (m_cameraFlipVertical)
-			lMode |= VideoControlFlag_FlipVertical;
-		hr = pVideoControl->SetMode(pCaptPin, lMode);		
-		LOG4CPP_INFO( logger, "flip image: " << lMode );
-	}
-
 #endif
 
 

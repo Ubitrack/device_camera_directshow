@@ -73,24 +73,6 @@
 					the exposure time is 1/2^n seconds, and for values zero or above, the exposure time is 2^n seconds. </h:p>
 				</Description>
 			</Attribute>
-			<Attribute name="cameraFlipHorizontal" displayName="flip image horizontal" default="false" xsi:type="EnumAttributeDeclarationType">
-				<Description>
-					<h:p>
-					Should the camera image flipped on the horizontal axis?
-					</h:p>
-				</Description>
-				<EnumValue name="false" displayName="False"/>
-				<EnumValue name="true"  displayName="True"/>
-			</Attribute>
-			<Attribute name="cameraFlipVertical" displayName="flip image vertical" default="false" xsi:type="EnumAttributeDeclarationType">
-				<Description>
-					<h:p>
-					Should the camera image flipped on the vertical axis?
-					</h:p>
-				</Description>
-				<EnumValue name="false" displayName="False"/>
-				<EnumValue name="true"  displayName="True"/>
-			</Attribute>
 			<Attribute name="cameraName" default="" xsi:type="StringAttributeDeclarationType" displayName="camera name">
 				<Description>
 					<h:p>Substring of the camera name as displayed by Windows. This will be used to select
@@ -174,24 +156,6 @@
 					<h:p>Specifies the exposure setting, in log base 2 seconds. In other words, for values less than zero, 
 					the exposure time is 1/2^n seconds, and for values zero or above, the exposure time is 2^n seconds. </h:p>
 				</Description>
-			</Attribute>
-			<Attribute name="cameraFlipHorizontal" displayName="flip image horizontal" default="false" xsi:type="EnumAttributeDeclarationType">
-				<Description>
-					<h:p>
-					Should the camera image flipped on the horizontal axis?
-					</h:p>
-				</Description>
-				<EnumValue name="false" displayName="False"/>
-				<EnumValue name="true"  displayName="True"/>
-			</Attribute>
-			<Attribute name="cameraFlipVertical" displayName="flip image vertical" default="false" xsi:type="EnumAttributeDeclarationType">
-				<Description>
-					<h:p>
-					Should the camera image flipped on the vertical axis?
-					</h:p>
-				</Description>
-				<EnumValue name="false" displayName="False"/>
-				<EnumValue name="true"  displayName="True"/>
 			</Attribute>
 			<Attribute name="cameraName" default="" xsi:type="StringAttributeDeclarationType" displayName="camera name">
 				<Description>
