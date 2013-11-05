@@ -73,6 +73,16 @@
 					the exposure time is 1/2^n seconds, and for values zero or above, the exposure time is 2^n seconds. </h:p>
 				</Description>
 			</Attribute>
+			<Attribute name="cameraGain" default="0" xsi:type="IntAttributeDeclarationType" displayName="camera gain">
+				<Description>
+					<h:p>Specifies the gain setting, in db. </h:p>
+				</Description>
+			</Attribute>
+			<Attribute name="cameraBrightness" default="0" xsi:type="IntAttributeDeclarationType" displayName="camera brightness">
+				<Description>
+					<h:p>Specifies the brightness setting. </h:p>
+				</Description>
+			</Attribute>
 			<Attribute name="cameraName" default="" xsi:type="StringAttributeDeclarationType" displayName="camera name">
 				<Description>
 					<h:p>Substring of the camera name as displayed by Windows. This will be used to select
@@ -155,6 +165,16 @@
 				<Description>
 					<h:p>Specifies the exposure setting, in log base 2 seconds. In other words, for values less than zero, 
 					the exposure time is 1/2^n seconds, and for values zero or above, the exposure time is 2^n seconds. </h:p>
+				</Description>
+			</Attribute>
+			<Attribute name="cameraGain" default="0" xsi:type="IntAttributeDeclarationType" displayName="camera gain">
+				<Description>
+					<h:p>Specifies the gain setting, in db. </h:p>
+				</Description>
+			</Attribute>
+			<Attribute name="cameraBrightness" default="0" xsi:type="IntAttributeDeclarationType" displayName="camera brightness">
+				<Description>
+					<h:p>Specifies the brightness setting. </h:p>
 				</Description>
 			</Attribute>
 			<Attribute name="cameraName" default="" xsi:type="StringAttributeDeclarationType" displayName="camera name">
