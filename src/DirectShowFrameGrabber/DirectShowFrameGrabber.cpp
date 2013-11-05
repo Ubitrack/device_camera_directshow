@@ -153,6 +153,12 @@ protected:
 	/** exposure control */
 	int m_cameraExposure;
 
+	/** gain control */
+	int m_cameraGain;
+
+	/** brightness control */
+	int m_cameraBrightness;
+
 	/** number of frames received */
 	int m_nFrames;
 
@@ -214,6 +220,8 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	, m_desiredWidth( 320 )
 	, m_desiredHeight( 240 )
 	, m_cameraExposure( 0 )
+	, m_cameraGain( 0 )
+	, m_cameraBrightness( 0 )
 	, m_nFrames( 0 )
 	, m_lastTime( -1e10 )
 	, m_syncer( 1.0 )
@@ -242,7 +250,8 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	m_desiredName = subgraph->m_DataflowAttributes.getAttributeString( "cameraName" );
 	
 	subgraph->m_DataflowAttributes.getAttributeData( "cameraExposure", m_cameraExposure );
-	// more properties here ..
+	subgraph->m_DataflowAttributes.getAttributeData( "cameraGain", m_cameraGain );
+	subgraph->m_DataflowAttributes.getAttributeData( "cameraBrightness", m_cameraBrightness );
 
 	std::string intrinsicFile = subgraph->m_DataflowAttributes.getAttributeString( "intrinsicMatrixFile" );
 	std::string distortionFile = subgraph->m_DataflowAttributes.getAttributeString( "distortionFile" );
@@ -498,8 +507,24 @@ void DirectShowFrameGrabber::initGraph()
 			hr = pCameraControl->Set(CameraControl_Exposure, // property
 									m_cameraExposure, // value
 									CameraControl_Flags_Manual); 
+			// check for errors
 		}
 	}
+
+	IAMVideoProcAmp *pAMVideoProcAmp;
+	hr = pCaptureFilter->QueryInterface(IID_IAMVideoProcAmp, (void**)&pAMVideoProcAmp);
+	if (SUCCEEDED(hr)) {
+
+		if (m_cameraGain != 0) {
+			hr = pAMVideoProcAmp->Set(VideoProcAmp_Gain, m_cameraGain, VideoProcAmp_Flags_Manual);
+			// check for errors
+		}
+		if (m_cameraBrightness != 0) {
+			hr = pAMVideoProcAmp->Set(VideoProcAmp_Brightness, m_cameraBrightness, VideoProcAmp_Flags_Manual);
+			// check for errors
+		}
+	}
+
 #endif
 
 
