@@ -1,11 +1,11 @@
-import glob
+#general script to call all SConscript files in all first level subdirectories
 
-Import( '*' )
+Import( 'globSourceFiles' )
 
 # glob all SConscript files in subdirectories
 sconsfiles = globSourceFiles( "*/SConscript" )
 
-# recurse into subdirectories and export driver build environment
+# call all SConscript files
 SConscript( sconsfiles )
 success = True
 Return('success')
