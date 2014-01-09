@@ -1,9 +1,0 @@
-import os
-import sys
-
-Import('*')
-
-# export results
-have_directshow = False
-directshow_options = {}
-Export( [ 'have_directshow', 'directshow_options' ] )
