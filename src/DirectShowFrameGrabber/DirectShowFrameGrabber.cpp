@@ -342,7 +342,13 @@ void DirectShowFrameGrabber::initGraph()
 			// select device based on name
 			if ( !m_desiredName.empty() && strstr( sName, m_desiredName.c_str() ) )
 			{
-				if ( !m_desiredDevicePath.empty() && strstr( sDevicePath, m_desiredDevicePath.c_str() ) ) {
+				if( m_desiredDevicePath.empty() )
+				{
+					sSelectedCamera = sName;
+					pSelectedMoniker = pMoniker;
+				}
+				else if ( strstr( sDevicePath, m_desiredDevicePath.c_str() ) )
+				{
 					sSelectedCamera = sName;
 					pSelectedMoniker = pMoniker;
 				}
