@@ -73,11 +73,7 @@
 					the exposure time is 1/2^n seconds, and for values zero or above, the exposure time is 2^n seconds. </h:p>
 				</Description>
 			</Attribute>
-			<Attribute name="cameraExposureAuto" default="0" xsi:type="EnumAttributeReferenceType" displayName="camera exposure automatic">
-				<Description>
-					<h:p>Enables/disables the exposure automatic. </h:p>
-				</Description>
-			</Attribute>
+			<Attribute name="cameraExposureAuto" xsi:type="EnumAttributeReferenceType"/>
 			<Attribute name="cameraBrightness" default="0" xsi:type="IntAttributeDeclarationType" displayName="camera brightness">
 				<Description>
 					<h:p>Specifies the brightness setting. </h:p>
@@ -108,16 +104,8 @@
 					<h:p>Specifies the whitebalance setting. </h:p>
 				</Description>
 			</Attribute>
-			<Attribute name="cameraWhitebalanceAuto" default="0" xsi:type="EnumAttributeReferenceType" displayName="camera whitebalance automatic">
-				<Description>
-					<h:p>Enables/disables the whitebalance automatic. </h:p>
-				</Description>
-			</Attribute>
-			<Attribute name="cameraBacklightComp" default="0" xsi:type="EnumAttributeReferenceType" displayName="camera backlight compensation">
-				<Description>
-					<h:p>Enables/disables the backlight compensation. </h:p>
-				</Description>
-			</Attribute>
+			<Attribute name="cameraWhitebalanceAuto" xsi:type="EnumAttributeReferenceType"/>
+			<Attribute name="cameraBacklightComp" xsi:type="EnumAttributeReferenceType"/>
 			<Attribute name="cameraGain" default="0" xsi:type="IntAttributeDeclarationType" displayName="camera gain">
 				<Description>
 					<h:p>Specifies the gain setting, in db. </h:p>
@@ -207,11 +195,7 @@
 					the exposure time is 1/2^n seconds, and for values zero or above, the exposure time is 2^n seconds. </h:p>
 				</Description>
 			</Attribute>
-			<Attribute name="cameraExposureAuto" default="0" xsi:type="EnumAttributeReferenceType" displayName="camera exposure automatic">
-				<Description>
-					<h:p>Enables/disables the exposure automatic. </h:p>
-				</Description>
-			</Attribute>
+			<Attribute name="cameraExposureAuto" xsi:type="EnumAttributeReferenceType"/>
 			<Attribute name="cameraBrightness" default="0" xsi:type="IntAttributeDeclarationType" displayName="camera brightness">
 				<Description>
 					<h:p>Specifies the brightness setting. </h:p>
@@ -242,16 +226,8 @@
 					<h:p>Specifies the whitebalance setting. </h:p>
 				</Description>
 			</Attribute>
-			<Attribute name="cameraWhitebalanceAuto" default="0" xsi:type="EnumAttributeReferenceType" displayName="camera whitebalance automatic">
-				<Description>
-					<h:p>Enables/disables the whitebalance automatic. </h:p>
-				</Description>
-			</Attribute>
-			<Attribute name="cameraBacklightComp" default="0" xsi:type="EnumAttributeReferenceType" displayName="camera backlight compensation">
-				<Description>
-					<h:p>Enables/disables the backlight compensation. </h:p>
-				</Description>
-			</Attribute>
+			<Attribute name="cameraWhitebalanceAuto" xsi:type="EnumAttributeReferenceType"/>
+			<Attribute name="cameraBacklightComp" xsi:type="EnumAttributeReferenceType"/>
 			<Attribute name="cameraGain" default="0" xsi:type="IntAttributeDeclarationType" displayName="camera gain">
 				<Description>
 					<h:p>Specifies the gain setting, in db. </h:p>
