@@ -41,6 +41,7 @@
 	#define __IDxtKey_INTERFACE_DEFINED__
 	#include <qedit.h>
 	#include <strmif.h>
+	#pragma warning(disable: 4995)
 #else
 	// this include file contains just the directshow interfaces necessary to compile this component
 	// if you need more, install the Windows SDK, the DirectX SDK (old version with dxtrans.h, e.g. August 2007) and
@@ -152,12 +153,33 @@ protected:
 
 	/** exposure control */
 	int m_cameraExposure;
+	bool m_cameraExposureAuto;
+
+	/** brightness control */
+	int m_cameraBrightness;
+
+	/** contrast control */
+	int m_cameraContrast;
+
+	/** saturation control */
+	int m_cameraSaturation;
+
+	/** sharpness control */
+	int m_cameraSharpness;
+
+	/** gamma control */
+	int m_cameraGamma;
+
+	/** whitebalance control */
+	int m_cameraWhitebalance;
+	bool m_cameraWhitebalanceAuto;
+
+	/** gain control */
+	bool m_cameraBacklightComp;
 
 	/** gain control */
 	int m_cameraGain;
 
-	/** brightness control */
-	int m_cameraBrightness;
 
 	/** number of frames received */
 	int m_nFrames;
@@ -220,8 +242,16 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	, m_desiredWidth( 320 )
 	, m_desiredHeight( 240 )
 	, m_cameraExposure( 0 )
-	, m_cameraGain( 0 )
+	, m_cameraExposureAuto( true )
 	, m_cameraBrightness( 0 )
+	, m_cameraContrast( 11 )
+	, m_cameraSaturation( 4 )
+	, m_cameraSharpness( 3 )
+	, m_cameraGamma( 150 )
+	, m_cameraWhitebalance( 4500 )
+	, m_cameraWhitebalanceAuto( true )
+	, m_cameraBacklightComp( false )
+	, m_cameraGain( 34 )
 	, m_nFrames( 0 )
 	, m_lastTime( -1e10 )
 	, m_syncer( 1.0 )
@@ -249,9 +279,38 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	m_desiredDevicePath = subgraph->m_DataflowAttributes.getAttributeString( "devicePath" );
 	m_desiredName = subgraph->m_DataflowAttributes.getAttributeString( "cameraName" );
 	
-	subgraph->m_DataflowAttributes.getAttributeData( "cameraExposure", m_cameraExposure );
-	subgraph->m_DataflowAttributes.getAttributeData( "cameraGain", m_cameraGain );
-	subgraph->m_DataflowAttributes.getAttributeData( "cameraBrightness", m_cameraBrightness );
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraExposure" ))
+		subgraph->m_DataflowAttributes.getAttributeData( "cameraExposure", m_cameraExposure );
+
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraExposureAuto" ))
+		m_cameraExposureAuto = subgraph->m_DataflowAttributes.getAttributeString( "cameraExposureAuto" ) == "true";
+
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraBrightness" ))
+		subgraph->m_DataflowAttributes.getAttributeData( "cameraBrightness", m_cameraBrightness );
+	
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraContrast" ))
+		subgraph->m_DataflowAttributes.getAttributeData( "cameraContrast", m_cameraContrast );
+	
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraSaturation" ))
+		subgraph->m_DataflowAttributes.getAttributeData( "cameraSaturation", m_cameraSaturation );
+	
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraSharpness" ))
+		subgraph->m_DataflowAttributes.getAttributeData( "cameraSharpness", m_cameraSharpness );
+	
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraGamma" ))
+		subgraph->m_DataflowAttributes.getAttributeData( "cameraGamma", m_cameraGamma );
+
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraWhitebalance" ))
+		subgraph->m_DataflowAttributes.getAttributeData( "cameraWhitebalance", m_cameraWhitebalance );
+	
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraWhitebalanceAuto" ))
+		m_cameraWhitebalanceAuto = subgraph->m_DataflowAttributes.getAttributeString( "cameraWhitebalanceAuto" ) == "true";
+
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraBacklightComp" ))
+		m_cameraBacklightComp = subgraph->m_DataflowAttributes.getAttributeString( "cameraBacklightComp" ) == "true";
+
+	if (subgraph->m_DataflowAttributes.hasAttribute( "cameraGain" ))
+		subgraph->m_DataflowAttributes.getAttributeData( "cameraGain", m_cameraGain );
 
 	std::string intrinsicFile = subgraph->m_DataflowAttributes.getAttributeString( "intrinsicMatrixFile" );
 	std::string distortionFile = subgraph->m_DataflowAttributes.getAttributeString( "distortionFile" );
@@ -282,8 +341,7 @@ void DirectShowFrameGrabber::start()
 void DirectShowFrameGrabber::stop()
 {
 	if ( m_running && m_pMediaControl )
-		m_pMediaControl->Pause();
-	
+		m_pMediaControl->Pause();	
 	Component::stop();
 }
 
@@ -500,35 +558,68 @@ void DirectShowFrameGrabber::initGraph()
 	 * http://msdn.microsoft.com/en-us/library/dd318253(v=vs.85).aspx
 	 */
 	IAMCameraControl *pCameraControl; 
-	//HRESULT hr; 
 	hr = pCaptureFilter->QueryInterface(IID_IAMCameraControl, (void **)&pCameraControl); 
 	if ( SUCCEEDED(hr) ) {
-	  //hr = pCameraControl->GetRange(CameraControl_Exposure,
-			//						NULL, // min
-			//						NULL, // max
-			//						NULL, // minstep
-			//						&defaultExposureValue, // default
-			//						NULL); // capflags
-		if (m_cameraExposure != 0) {
-			hr = pCameraControl->Set(CameraControl_Exposure, // property
-									m_cameraExposure, // value
-									CameraControl_Flags_Manual); 
-			// check for errors
-		}
+
+		// could check if provided value is within range
+		//hr = pCameraControl->GetRange(CameraControl_Exposure,
+		//						NULL, // min
+		//						NULL, // max
+		//						NULL, // minstep
+		//						&defaultExposureValue, // default
+		//						NULL); // capflags
+
+		int expFlag = CameraControl_Flags_Manual;
+		if (m_cameraExposureAuto)
+			expFlag = CameraControl_Flags_Auto;
+
+		hr = pCameraControl->Set(CameraControl_Exposure, // property
+								m_cameraExposure, // value
+								expFlag); 
+		if (FAILED(hr))
+			LOG4CPP_ERROR( logger, "Error setting camera exposure property to " << m_cameraExposure);
 	}
 
 	IAMVideoProcAmp *pAMVideoProcAmp;
 	hr = pCaptureFilter->QueryInterface(IID_IAMVideoProcAmp, (void**)&pAMVideoProcAmp);
 	if (SUCCEEDED(hr)) {
 
-		if (m_cameraGain != 0) {
-			hr = pAMVideoProcAmp->Set(VideoProcAmp_Gain, m_cameraGain, VideoProcAmp_Flags_Manual);
-			// check for errors
-		}
-		if (m_cameraBrightness != 0) {
-			hr = pAMVideoProcAmp->Set(VideoProcAmp_Brightness, m_cameraBrightness, VideoProcAmp_Flags_Manual);
-			// check for errors
-		}
+		hr = pAMVideoProcAmp->Set(VideoProcAmp_Brightness, m_cameraBrightness, VideoProcAmp_Flags_Manual);
+		if (FAILED(hr))
+			LOG4CPP_ERROR( logger, "Error setting camera exposure brightness to " << m_cameraBrightness);
+
+		hr = pAMVideoProcAmp->Set(VideoProcAmp_Contrast, m_cameraContrast, VideoProcAmp_Flags_Manual);
+		if (FAILED(hr))
+			LOG4CPP_ERROR( logger, "Error setting camera contrast property to " << m_cameraContrast);
+
+		hr = pAMVideoProcAmp->Set(VideoProcAmp_Saturation, m_cameraSaturation, VideoProcAmp_Flags_Manual);
+		if (FAILED(hr))
+			LOG4CPP_ERROR( logger, "Error setting camera saturation property to " << m_cameraSaturation);
+
+		hr = pAMVideoProcAmp->Set(VideoProcAmp_Sharpness, m_cameraSharpness, VideoProcAmp_Flags_Manual);
+		if (FAILED(hr))
+			LOG4CPP_ERROR( logger, "Error setting camera sharpness property to " << m_cameraSharpness);
+
+		hr = pAMVideoProcAmp->Set(VideoProcAmp_Gamma, m_cameraGamma, VideoProcAmp_Flags_Manual);
+		if (FAILED(hr))
+			LOG4CPP_ERROR( logger, "Error setting camera gamma property to " << m_cameraGamma);
+
+		int wbFlags = VideoProcAmp_Flags_Manual;
+		if (m_cameraWhitebalanceAuto)
+			wbFlags = VideoProcAmp_Flags_Auto;
+		hr = pAMVideoProcAmp->Set(VideoProcAmp_WhiteBalance, m_cameraWhitebalance, wbFlags);
+		if (FAILED(hr))
+			LOG4CPP_ERROR( logger, "Error setting camera whitebalance property to " << m_cameraWhitebalance);
+
+		int backlightComp = m_cameraBacklightComp ? 1 : 0;
+		hr = pAMVideoProcAmp->Set(VideoProcAmp_BacklightCompensation, backlightComp, VideoProcAmp_Flags_Manual);
+		if (FAILED(hr))
+			LOG4CPP_ERROR( logger, "Error setting camera backlight compensation property to " << backlightComp);
+
+		hr = pAMVideoProcAmp->Set(VideoProcAmp_Gain, m_cameraGain, VideoProcAmp_Flags_Manual);
+		if (FAILED(hr))
+			LOG4CPP_ERROR( logger, "Error setting camera gain property to " << m_cameraGain);
+
 	}
 
 #endif
