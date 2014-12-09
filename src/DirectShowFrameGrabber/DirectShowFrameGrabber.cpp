@@ -637,7 +637,7 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, const V
 	bool bColorImageDistorted = true;
 	
 	if ( ( m_desiredWidth > 0 && m_desiredHeight > 0 ) && 
-		( bufferImage.width > m_desiredWidth || bufferImage.height > m_desiredHeight ) )
+		( bufferImage.width() > m_desiredWidth || bufferImage.height() > m_desiredHeight ) )
 	{
 	    LOG4CPP_DEBUG( logger, "downsampling" );
 		pColorImage.reset( new Vision::Image( m_desiredWidth, m_desiredHeight, 3 ) );
