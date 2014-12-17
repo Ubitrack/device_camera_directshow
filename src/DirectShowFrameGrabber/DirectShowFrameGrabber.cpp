@@ -653,7 +653,7 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, const V
 			pColorImage = m_undistorter->undistort( bufferImage );
 		bColorImageDistorted = false;
 
-		memcpy( pColorImage->channelSeq, "BGR", 4 );
+		memcpy( pColorImage->iplImage()->channelSeq, "BGR", 4 );
 		
 		m_colorOutPort.send( Measurement::ImageMeasurement( utTime, pColorImage ) );
 	}
