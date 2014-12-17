@@ -641,7 +641,7 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, const V
 	{
 	    LOG4CPP_DEBUG( logger, "downsampling" );
 		pColorImage.reset( new Vision::Image( m_desiredWidth, m_desiredHeight, 3 ) );
-		pColorImage->origin = bufferImage.origin;
+		pColorImage->iplImage()->origin = bufferImage.origin();
 		cvResize( bufferImage, *pColorImage );
 	}
 
