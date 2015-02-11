@@ -253,11 +253,19 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	subgraph->m_DataflowAttributes.getAttributeData( "cameraGain", m_cameraGain );
 	subgraph->m_DataflowAttributes.getAttributeData( "cameraBrightness", m_cameraBrightness );
 
-	std::string intrinsicFile = subgraph->m_DataflowAttributes.getAttributeString( "intrinsicMatrixFile" );
-	std::string distortionFile = subgraph->m_DataflowAttributes.getAttributeString( "distortionFile" );
+	if (subgraph->m_DataflowAttributes.hasAttribute("cameraModelFile")){
+		std::string cameraModelFile = subgraph->m_DataflowAttributes.getAttributeString("cameraModelFile");
+		m_undistorter.reset(new Vision::Undistortion(cameraModelFile));
+	}
+	else {
+		std::string intrinsicFile = subgraph->m_DataflowAttributes.getAttributeString("intrinsicMatrixFile");
+		std::string distortionFile = subgraph->m_DataflowAttributes.getAttributeString("distortionFile");
+
+
+		m_undistorter.reset(new Vision::Undistortion(intrinsicFile, distortionFile));
+	}
+
 	
-	
-	m_undistorter.reset(new Vision::Undistortion(intrinsicFile, distortionFile));
 
 	initGraph();
 }
@@ -267,6 +275,7 @@ DirectShowFrameGrabber::~DirectShowFrameGrabber()
 {
 	if ( m_pMediaControl )
 		m_pMediaControl->Stop();
+	CoUninitialize();
 }
 
 
