@@ -120,7 +120,7 @@ protected:
 	void initGraph();
 
 	/** handles a frame after being converted to Vision::Image */
-	void handleFrame( Measurement::Timestamp utTime, const Vision::Image& bufferImage );
+	void handleFrame( Measurement::Timestamp utTime, Vision::Image& bufferImage );
 
 	/** handler method for incoming pull requests */
 	Measurement::Matrix3x3 getIntrinsic( Measurement::Timestamp t )
@@ -631,7 +631,7 @@ void DirectShowFrameGrabber::initGraph()
 }
 
 
-void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, const Vision::Image& bufferImage )
+void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision::Image& bufferImage )
 {
 	boost::shared_ptr< Vision::Image > pColorImage;
 	bool bColorImageDistorted = true;
