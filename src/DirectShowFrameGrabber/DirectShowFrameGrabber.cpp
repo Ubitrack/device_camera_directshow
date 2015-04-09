@@ -130,7 +130,7 @@ protected:
 
 	/** handler method for incoming pull requests */
 	Measurement::Matrix3x3 getIntrinsic( Measurement::Timestamp t )
-	{ return Measurement::Matrix3x3( t, m_undistorter->getIntrinsics() ); }
+	{ return Measurement::Matrix3x3( t, m_undistorter->getMatrix() ); }
 
 	// width of resulting image
 	LONG m_sampleWidth;
