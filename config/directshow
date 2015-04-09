@@ -1,0 +1,30 @@
+import os
+import sys
+
+# add configuration options
+Import( '*' )
+
+SConscript ( '#/config/libraryConfig.py' )
+Import('standardLibFinder', 'standardLibConfig')
+
+
+libName = "DIRECTSHOW"
+
+compileSettings = []
+
+#[{additional compile settings}, {include files}, {language (C++)},{library to link against (optional)}, {source code (optional)}]
+compileSettings =[ {}, "DShow.h", "C++"]		
+
+libFinder = standardLibFinder(libName,compileSettings)
+
+configHelper = standardLibConfig(libName, libFinder)
+
+directshow_options = configHelper.getLibraryOptions()
+have_directshow = configHelper.haveLib()
+
+# export results
+Export( [ 'have_directshow', 'directshow_options' ] )
+
+
+
+

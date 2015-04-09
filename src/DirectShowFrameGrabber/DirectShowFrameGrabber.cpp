@@ -32,6 +32,7 @@
 #include <utUtil/CleanWindows.h>
 #include <objbase.h>
 
+
 #ifdef HAVE_DIRECTSHOW
 	#include <DShow.h>
 	#pragma include_alias( "dxtrans.h", "qedit.h" )
@@ -39,8 +40,12 @@
 	#define __IDxtAlphaSetter_INTERFACE_DEFINED__
 	#define __IDxtJpeg_INTERFACE_DEFINED__
 	#define __IDxtKey_INTERFACE_DEFINED__
-	#include <qedit.h>
+	#include <Qedit.h>
 	#include <strmif.h>
+
+struct __declspec(uuid("0579154A-2B53-4994-B0D0-E773148EFF85")) ISampleGrabberCB;
+struct __declspec(uuid("6B652FFF-11FE-4fce-92AD-0266B5D7C78F")) ISampleGrabber;
+
 	#pragma warning(disable: 4995)
 #else
 	// this include file contains just the directshow interfaces necessary to compile this component
@@ -73,6 +78,7 @@
 #include <opencv/cv.h>
 #include <utVision/Image.h>
 #include <utVision/Undistortion.h>
+
 
 
 // get a logger
@@ -198,6 +204,11 @@ protected:
 	Dataflow::PushSupplier< Measurement::ImageMeasurement > m_colorOutPort;
 	Dataflow::PullSupplier< Measurement::Matrix3x3 > m_intrinsicsPort;
 
+	Dataflow::PushSupplier< Measurement::ImageMeasurement > m_outPortRAW;
+	boost::shared_ptr < Dataflow::PushConsumer< Measurement::CameraIntrinsics > > m_intrinsicInPort;
+
+	void newIntrinsicsPush(Measurement::CameraIntrinsics intrinsics);
+
 	/** pointer to DirectShow filter graph */
 	AutoComPtr< IMediaControl > m_pMediaControl;
 
@@ -259,6 +270,7 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	, m_outPort( "Output", *this )
 	, m_colorOutPort( "ColorOutput", *this )
 	, m_intrinsicsPort( "Intrinsics", *this, boost::bind( &DirectShowFrameGrabber::getIntrinsic, this, _1 ) )
+	, m_outPortRAW("OutputRAW", *this)
 {
 	HRESULT hRes = CoInitializeEx( NULL, COINIT_MULTITHREADED );
 	if ( hRes == RPC_E_CHANGED_MODE )
@@ -324,9 +336,28 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 		m_undistorter.reset(new Vision::Undistortion(intrinsicFile, distortionFile));
 	}
 
+
+	// dynamically generate input ports
+	for (Graph::UTQLSubgraph::EdgeMap::iterator it = subgraph->m_Edges.begin(); it != subgraph->m_Edges.end(); it++)
+	{
+		if (it->second->isInput())
+		{
+			if (0 == it->first.compare(0, 15, "InputIntrinsics")) {
+				m_intrinsicInPort.reset(new Dataflow::PushConsumer< Measurement::CameraIntrinsics >(it->first, *this,
+					boost::bind(&DirectShowFrameGrabber::newIntrinsicsPush, this, _1)));
+
+			}
+			
+		}
+	}
+
 	
 
 	initGraph();
+}
+
+void DirectShowFrameGrabber::newIntrinsicsPush(Measurement::CameraIntrinsics intrinsics) {
+	m_undistorter.reset(new Vision::Undistortion(*intrinsics));
 }
 
 
@@ -566,6 +597,9 @@ void DirectShowFrameGrabber::initGraph()
 	/* additionally control camera parameters infos at:
 	 * http://msdn.microsoft.com/en-us/library/dd318253(v=vs.85).aspx
 	 */
+
+	LOG4CPP_INFO( logger, "Setting additional direct show parameter ");
+
 	IAMCameraControl *pCameraControl; 
 	hr = pCaptureFilter->QueryInterface(IID_IAMCameraControl, (void **)&pCameraControl); 
 	if ( SUCCEEDED(hr) ) {
@@ -592,6 +626,49 @@ void DirectShowFrameGrabber::initGraph()
 	IAMVideoProcAmp *pAMVideoProcAmp;
 	hr = pCaptureFilter->QueryInterface(IID_IAMVideoProcAmp, (void**)&pAMVideoProcAmp);
 	if (SUCCEEDED(hr)) {
+
+		long Min, Max, Step, Default, Flags, Val;
+
+		pAMVideoProcAmp->GetRange(VideoProcAmp_Brightness, &Min, &Max, &Step, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Possible Settings for VideoProcAmp_Brightness: min=" <<Min << " max="<<Max << " Step=" << Step << " Default="<<Default << " Flags="<<Flags );
+		pAMVideoProcAmp->Get(VideoProcAmp_Brightness, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Current Settings for VideoProcAmp_Brightness: Default=" << Default << " Flags=" << Flags);
+
+		pAMVideoProcAmp->GetRange(VideoProcAmp_Contrast, &Min, &Max, &Step, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Possible Settings for VideoProcAmp_Contrast: min=" << Min << " max=" << Max << " Step=" << Step << " Default=" << Default << " Flags=" << Flags);
+		pAMVideoProcAmp->Get(VideoProcAmp_Contrast, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Current Settings for VideoProcAmp_Contrast: Default=" << Default << " Flags=" << Flags);
+		
+		pAMVideoProcAmp->GetRange(VideoProcAmp_Saturation, &Min, &Max, &Step, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Possible Settings for VideoProcAmp_Saturation: min=" << Min << " max=" << Max << " Step=" << Step << " Default=" << Default << " Flags=" << Flags);
+		pAMVideoProcAmp->Get(VideoProcAmp_Saturation, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Current Settings for VideoProcAmp_Saturation: Default=" << Default << " Flags=" << Flags);
+		
+		pAMVideoProcAmp->GetRange(VideoProcAmp_Sharpness, &Min, &Max, &Step, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Possible Settings for VideoProcAmp_Sharpness: min=" << Min << " max=" << Max << " Step=" << Step << " Default=" << Default << " Flags=" << Flags);
+		pAMVideoProcAmp->Get(VideoProcAmp_Sharpness, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Current Settings for VideoProcAmp_Sharpness: Default=" << Default << " Flags=" << Flags);
+		
+		pAMVideoProcAmp->GetRange(VideoProcAmp_Gamma, &Min, &Max, &Step, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Possible Settings for VideoProcAmp_Gamma: min=" << Min << " max=" << Max << " Step=" << Step << " Default=" << Default << " Flags=" << Flags);
+		pAMVideoProcAmp->Get(VideoProcAmp_Gamma, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Current Settings for VideoProcAmp_Gamma: Default=" << Default << " Flags=" << Flags);
+		
+		pAMVideoProcAmp->GetRange(VideoProcAmp_WhiteBalance, &Min, &Max, &Step, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Possible Settings for VideoProcAmp_WhiteBalance: min=" << Min << " max=" << Max << " Step=" << Step << " Default=" << Default << " Flags=" << Flags);
+		pAMVideoProcAmp->Get(VideoProcAmp_WhiteBalance, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Current Settings for VideoProcAmp_WhiteBalance: Default=" << Default << " Flags=" << Flags);
+		
+		pAMVideoProcAmp->GetRange(VideoProcAmp_BacklightCompensation, &Min, &Max, &Step, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Possible Settings for VideoProcAmp_BacklightCompensation: min=" << Min << " max=" << Max << " Step=" << Step << " Default=" << Default << " Flags=" << Flags);
+		pAMVideoProcAmp->Get(VideoProcAmp_BacklightCompensation, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Current Settings for VideoProcAmp_BacklightCompensation: Default=" << Default << " Flags=" << Flags);
+		
+		pAMVideoProcAmp->GetRange(VideoProcAmp_Gain, &Min, &Max, &Step, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Possible Settings for VideoProcAmp_Gain: min=" << Min << " max=" << Max << " Step=" << Step << " Default=" << Default << " Flags=" << Flags);
+		pAMVideoProcAmp->Get(VideoProcAmp_Gain, &Default, &Flags);
+		LOG4CPP_INFO(logger, "Current Settings for VideoProcAmp_Gain: Default=" << Default << " Flags=" << Flags);
+		
 
 		hr = pAMVideoProcAmp->Set(VideoProcAmp_Brightness, m_cameraBrightness, VideoProcAmp_Flags_Manual);
 		if (FAILED(hr))
@@ -652,6 +729,10 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, const V
 		pColorImage.reset( new Vision::Image( m_desiredWidth, m_desiredHeight, 3 ) );
 		pColorImage->origin = bufferImage.origin;
 		cvResize( bufferImage, *pColorImage );
+	}
+
+	if (m_outPortRAW.isConnected()) {
+		m_outPortRAW.send(Measurement::ImageMeasurement(utTime, bufferImage.Clone()));
 	}
 
 	if ( m_colorOutPort.isConnected() )
