@@ -418,6 +418,8 @@ void DirectShowFrameGrabber::initGraph()
 				{
 					sSelectedCamera = sName;
 					pSelectedMoniker = pMoniker;
+				} else {
+					LOG4CPP_WARN( logger, "device ID did not match");
 				}
 			}
 
