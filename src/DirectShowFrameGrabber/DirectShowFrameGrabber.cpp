@@ -413,13 +413,14 @@ void DirectShowFrameGrabber::initGraph()
 				{
 					sSelectedCamera = sName;
 					pSelectedMoniker = pMoniker;
+					break;
 				}
 				else if ( strstr( sDevicePath, m_desiredDevicePath.c_str() ) )
 				{
 					sSelectedCamera = sName;
 					pSelectedMoniker = pMoniker;
-				} else {
-					LOG4CPP_WARN( logger, "device ID did not match");
+					LOG4CPP_INFO( logger, "Found device with path-identifier: " << m_desiredDevicePath );
+					break;
 				}
 			}
 
