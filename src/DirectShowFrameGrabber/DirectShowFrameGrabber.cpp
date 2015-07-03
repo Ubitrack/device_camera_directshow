@@ -1,7 +1,7 @@
 /*
  * Ubitrack - Library for Ubiquitous Tracking
  * Copyright 2006, Technische Universitaet Muenchen, and individual
- * contributors as indicated by the @authors tag. See the
+ 3* contributors as indicated by the @authors tag. See the
  * copyright.txt in the distribution for a full listing of individual
  * contributors.
  *
@@ -78,8 +78,7 @@ struct __declspec(uuid("6B652FFF-11FE-4fce-92AD-0266B5D7C78F")) ISampleGrabber;
 #include <opencv/cv.h>
 #include <utVision/Image.h>
 #include <utVision/Undistortion.h>
-
-
+#include <utVision/OpenCLManager.h>
 
 // get a logger
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.DirectShowFrameGrabber" ) );
@@ -725,7 +724,7 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 	if ( ( m_desiredWidth > 0 && m_desiredHeight > 0 ) && 
 		( bufferImage.width() > m_desiredWidth || bufferImage.height() > m_desiredHeight ) )
 	{
-	    LOG4CPP_DEBUG( logger, "downsampling" );
+	    LOG4CPP_INFO( logger, "downsampling" );
 		pColorImage.reset( new Vision::Image( m_desiredWidth, m_desiredHeight, 3 ) );
 		pColorImage->iplImage()->origin = bufferImage.origin();
 		cvResize( bufferImage, *pColorImage );
@@ -737,27 +736,39 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 
 	if ( m_colorOutPort.isConnected() )
 	{
+		
 		if ( pColorImage )
 			pColorImage = m_undistorter->undistort( pColorImage );
 		else
 			pColorImage = m_undistorter->undistort( bufferImage );
 		bColorImageDistorted = false;
 
-		memcpy( pColorImage->iplImage()->channelSeq, "BGR", 4 );
+		//memcpy( pColorImage->iplImage()->channelSeq, "BGR", 4 );
 		
-		m_colorOutPort.send( Measurement::ImageMeasurement( utTime, pColorImage ) );
+		//fixme
+		//m_colorOutPort.send( Measurement::ImageMeasurement(utTime, bufferImage.Clone() )  );
+		m_colorOutPort.send( Measurement::ImageMeasurement(utTime, pColorImage )  );
 	}
 
 	if ( m_outPort.isConnected() )
 	{
 		boost::shared_ptr< Vision::Image > pGreyImage;
-		if ( pColorImage )
+		/*if ( pColorImage )
 			pGreyImage = pColorImage->CvtColor( CV_BGR2GRAY, 1 );
 		else
 			pGreyImage = bufferImage.CvtColor( CV_BGR2GRAY, 1 );
-		
-		if ( bColorImageDistorted )
-			pGreyImage = m_undistorter->undistort( pGreyImage );
+		*/
+		if ( pColorImage ){
+			cv::cvtColor(pColorImage->uMat(), pGreyImage->uMat(), cv::COLOR_RGB2GRAY);
+			//pGreyImage = pColorImage->CvtColor( CV_BGR2GRAY, 1 );
+		}else{
+			cv::cvtColor(bufferImage.uMat(), pGreyImage->uMat(), cv::COLOR_RGB2GRAY);
+			//pGreyImage = bufferImage.CvtColor( CV_BGR2GRAY, 1 );
+		}
+
+		//FixME!
+		//if ( bColorImageDistorted )
+		//	pGreyImage = m_undistorter->undistort( pGreyImage );
 		
 		m_outPort.send( Measurement::ImageMeasurement( utTime, pGreyImage ) );
 	}
@@ -768,6 +779,12 @@ STDMETHODIMP DirectShowFrameGrabber::SampleCB( double Time, IMediaSample *pSampl
 {
 	// TODO: check for double frames when using multiple cameras...
 	LOG4CPP_DEBUG( logger, "SampleCB called" );
+	//LOG4CPP_INFO( logger, "SampleCB callled: " << Ubitrack::Vision::OpenCLManager::singleton().isInitialized());
+	if(!Ubitrack::Vision::OpenCLManager::singleton().isInitialized())
+	{
+		LOG4CPP_INFO( logger, "skipping frame; OpenCL Manager not initialized");
+		return S_OK;
+	}
 
 	if ( Time == m_lastTime )
 	{
@@ -792,13 +809,19 @@ STDMETHODIMP DirectShowFrameGrabber::SampleCB( double Time, IMediaSample *pSampl
 		LOG4CPP_INFO( logger, "GetPointer failed" );
 		return S_OK;
 	}
+	
 
 	// create IplImage, convert and send
 	Vision::Image bufferImage( m_sampleWidth, m_sampleHeight, 3, pBuffer, IPL_DEPTH_8U, 1 );
 	Measurement::Timestamp utTime = m_syncer.convertNativeToLocal( Time );
-
-	handleFrame( utTime + 1000000L * m_timeOffset, bufferImage );
-
+	static int i = 0;
+	//if(i <= 10 ){
+		LOG4CPP_INFO( logger, "handleFrame: " << i );
+		handleFrame( utTime + 1000000L * m_timeOffset, bufferImage );
+		LOG4CPP_INFO( logger, "handleFrame: " << i << "end");
+	//}
+	
+	i++;
 	return S_OK;
 }
 
