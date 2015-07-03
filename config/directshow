@@ -13,7 +13,7 @@ libName = "DIRECTSHOW"
 compileSettings = []
 
 #[{additional compile settings}, {include files}, {language (C++)},{library to link against (optional)}, {source code (optional)}]
-compileSettings =[ {}, "DShow.h", "C++"]		
+compileSettings =[ {}, "QEdit.h", "C++"]		
 
 libFinder = standardLibFinder(libName,compileSettings)
 

@@ -41,7 +41,8 @@ headers = globSourceFiles( '*.h' )
 sources = globSourceFiles( '*.cpp' ) 
 sources += globSourceFiles( '*.c' )
 
-for src in [ 'DirectShowInterfaces_i.c' ]:
+if have_directshow:
+	for src in [ 'DirectShowInterfaces_i.c' ]:
 		sources.remove( src );
 
 # c)
@@ -49,9 +50,9 @@ framegrabber_options = mergeOptions(utvision_all_options, utdataflow_all_options
 env = masterEnv.Clone()
 env.AppendUnique( **framegrabber_options )	
 
-#if have_directshow:
-#env.AppendUnique(directshow_options)
-env.Append( CPPDEFINES = [ 'HAVE_DIRECTSHOW'] )
+if have_directshow:
+	env.AppendUnique(directshow_options)
+	env.Append( CPPDEFINES = [ 'HAVE_DIRECTSHOW'] )
 
 env.AppendUnique( LIBS = [ "ole32", "oleaut32" ] )
 
