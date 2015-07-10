@@ -32,7 +32,7 @@
 #include <utUtil/CleanWindows.h>
 #include <objbase.h>
 
-
+#undef HAVE_DIRECTSHOW
 #ifdef HAVE_DIRECTSHOW
 	#include <DShow.h>
 	#pragma include_alias( "dxtrans.h", "qedit.h" )
@@ -732,7 +732,7 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 		pColorImage->iplImage()->origin = bufferImage.origin();
 		cvResize( bufferImage, *pColorImage );
 	}
-
+	
 	if (m_outPortRAW.isConnected()) {
 		m_outPortRAW.send(Measurement::ImageMeasurement(utTime, bufferImage.Clone()));
 	}
@@ -740,6 +740,7 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 	if ( m_colorOutPort.isConnected() )
 	{
 		
+		LOG4CPP_INFO( logger, "undistorting color image" );
 		if ( pColorImage )
 			pColorImage = m_undistorter->undistort( pColorImage );
 		else
@@ -747,32 +748,27 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 		bColorImageDistorted = false;
 
 		//memcpy( pColorImage->iplImage()->channelSeq, "BGR", 4 );
-		
+		LOG4CPP_INFO( logger, "senind color image" );
 		//fixme
 		//m_colorOutPort.send( Measurement::ImageMeasurement(utTime, bufferImage.Clone() )  );
 		m_colorOutPort.send( Measurement::ImageMeasurement(utTime, pColorImage )  );
 	}
 
+	
 	if ( m_outPort.isConnected() )
 	{
-		boost::shared_ptr< Vision::Image > pGreyImage;
-		/*if ( pColorImage )
-			pGreyImage = pColorImage->CvtColor( CV_BGR2GRAY, 1 );
-		else
-			pGreyImage = bufferImage.CvtColor( CV_BGR2GRAY, 1 );
-		*/
+		boost::shared_ptr< Vision::Image > pGreyImage( new Vision::Image( bufferImage.width(), bufferImage.height(), 1, IPL_DEPTH_8U));
+
+
 		if ( pColorImage ){
 			cv::cvtColor(pColorImage->uMat(), pGreyImage->uMat(), cv::COLOR_RGB2GRAY);
-			//pGreyImage = pColorImage->CvtColor( CV_BGR2GRAY, 1 );
 		}else{
 			cv::cvtColor(bufferImage.uMat(), pGreyImage->uMat(), cv::COLOR_RGB2GRAY);
-			//pGreyImage = bufferImage.CvtColor( CV_BGR2GRAY, 1 );
 		}
 
 		//FixME!
-		//if ( bColorImageDistorted )
-		//	pGreyImage = m_undistorter->undistort( pGreyImage );
-		
+		if ( bColorImageDistorted )
+			pGreyImage = m_undistorter->undistort( pGreyImage );
 		m_outPort.send( Measurement::ImageMeasurement( utTime, pGreyImage ) );
 	}
 }
