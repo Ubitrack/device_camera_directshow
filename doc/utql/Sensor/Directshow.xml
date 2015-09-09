@@ -134,6 +134,15 @@
                 <Description><h:p>Optional file where radial distortion coefficients will be read from. This is necessary to
                 undistort the image. </h:p></Description>
             </Attribute>
+			<Attribute name="uploadImageOnGPU" displayName="Automatic Upload on GPU" default="false" xsi:type="EnumAttributeDeclarationType">
+                    <Description>
+                        <h:p>
+							Each grabbed Image is automatically uploaded to the GPU for further processing. Attention: Uploading and downloading images from the GPU is time consuming.
+                        </h:p>
+                    </Description>
+                    <EnumValue name="false" displayName="False"/>
+                    <EnumValue name="true"  displayName="True"/>
+            </Attribute>
 		</DataflowConfiguration>
 	</Pattern>
 
@@ -268,7 +277,16 @@
                 	undistort the image. The matrix is also provided to other components via the 
                 	<h:code>Intrinsics</h:code> port</h:p>
                	</Description>
-            </Attribute>          
+            </Attribute>
+			<Attribute name="uploadImageOnGPU" displayName="Automatic Upload on GPU" default="false" xsi:type="EnumAttributeDeclarationType">
+                    <Description>
+                        <h:p>
+							Each grabbed Image is automatically uploaded to the GPU for further processing. Attention: Uploading and downloading images from the GPU is time consuming.
+                        </h:p>
+                    </Description>
+                    <EnumValue name="false" displayName="False"/>
+                    <EnumValue name="true"  displayName="True"/>
+            </Attribute>			
 		</DataflowConfiguration>
 	</Pattern>
 	
@@ -412,7 +430,16 @@
                 	undistort the image. The matrix is also provided to other components via the 
                 	<h:code>Intrinsics</h:code> port</h:p>
                	</Description>
-            </Attribute>          
+            </Attribute>
+			<Attribute name="uploadImageOnGPU" displayName="Automatic Upload on GPU" default="false" xsi:type="EnumAttributeDeclarationType">
+                    <Description>
+                        <h:p>
+							Each grabbed Image is automatically uploaded to the GPU for further processing. Attention: Uploading and downloading images from the GPU is time consuming.
+                        </h:p>
+                    </Description>
+                    <EnumValue name="false" displayName="False"/>
+                    <EnumValue name="true"  displayName="True"/>
+            </Attribute>
 		</DataflowConfiguration>
 	</Pattern>
 
@@ -523,6 +550,15 @@
 					This will be used to select a camera, if multiple cameras are available. </h:p>
 				</Description>
 			</Attribute>
+			<Attribute name="uploadImageOnGPU" displayName="Automatic Upload on GPU" default="false" xsi:type="EnumAttributeDeclarationType">
+                    <Description>
+                        <h:p>
+							Each grabbed Image is automatically uploaded to the GPU for further processing. Attention: Uploading and downloading images from the GPU is time consuming.
+                        </h:p>
+                    </Description>
+                    <EnumValue name="false" displayName="False"/>
+                    <EnumValue name="true"  displayName="True"/>
+            </Attribute>
 		</DataflowConfiguration>
 	</Pattern>
 

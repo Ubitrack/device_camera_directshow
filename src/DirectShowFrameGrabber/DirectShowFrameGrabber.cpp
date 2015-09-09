@@ -80,6 +80,9 @@ struct __declspec(uuid("6B652FFF-11FE-4fce-92AD-0266B5D7C78F")) ISampleGrabber;
 #include <utVision/Undistortion.h>
 #include <utVision/OpenCLManager.h>
 
+#include <opencv/highgui.h>
+#include <opencv2/core/ocl.hpp>
+
 // get a logger
 static log4cpp::Category& logger( log4cpp::Category::getInstance( "Ubitrack.Vision.DirectShowFrameGrabber" ) );
 
@@ -192,6 +195,9 @@ protected:
 	/** timestamp of last frame */
 	double m_lastTime;
 
+	/** automatic upload of images to the GPU*/
+	bool m_autoGPUUpload;
+
 	/** timestamp synchronizer */
 	Measurement::TimestampSync m_syncer;
 
@@ -270,6 +276,7 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 	, m_colorOutPort( "ColorOutput", *this )
 	, m_intrinsicsPort( "Intrinsics", *this, boost::bind( &DirectShowFrameGrabber::getIntrinsic, this, _1 ) )
 	, m_outPortRAW("OutputRAW", *this)
+	, m_autoGPUUpload(false)
 {
 	HRESULT hRes = CoInitializeEx( NULL, COINIT_MULTITHREADED );
 	if ( hRes == RPC_E_CHANGED_MODE )
@@ -335,6 +342,10 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 		m_undistorter.reset(new Vision::Undistortion(intrinsicFile, distortionFile));
 	}
 
+	if (subgraph->m_DataflowAttributes.hasAttribute("uploadImageOnGPU")){
+		m_autoGPUUpload = subgraph->m_DataflowAttributes.getAttributeString("uploadImageOnGPU") == "true";
+		LOG4CPP_INFO(logger, "Upload to GPU enabled? " << m_autoGPUUpload);
+	}
 
 	// dynamically generate input ports
 	for (Graph::UTQLSubgraph::EdgeMap::iterator it = subgraph->m_Edges.begin(); it != subgraph->m_Edges.end(); it++)
@@ -719,6 +730,7 @@ void DirectShowFrameGrabber::initGraph()
 }
 
 
+
 void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision::Image& bufferImage )
 {
 	boost::shared_ptr< Vision::Image > pColorImage;
@@ -727,7 +739,6 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 	if ( ( m_desiredWidth > 0 && m_desiredHeight > 0 ) && 
 		( bufferImage.width() > m_desiredWidth || bufferImage.height() > m_desiredHeight ) )
 	{
-	    LOG4CPP_INFO( logger, "downsampling" );
 		pColorImage.reset( new Vision::Image( m_desiredWidth, m_desiredHeight, 3 ) );
 		pColorImage->iplImage()->origin = bufferImage.origin();
 		cvResize( bufferImage, *pColorImage );
@@ -739,8 +750,6 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 
 	if ( m_colorOutPort.isConnected() )
 	{
-		
-		LOG4CPP_INFO( logger, "undistorting color image" );
 		if ( pColorImage )
 			pColorImage = m_undistorter->undistort( pColorImage );
 		else
@@ -748,7 +757,7 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 		bColorImageDistorted = false;
 
 		//memcpy( pColorImage->iplImage()->channelSeq, "BGR", 4 );
-		LOG4CPP_INFO( logger, "senind color image" );
+		//LOG4CPP_INFO( logger, "senind color image" );
 		//fixme
 		//m_colorOutPort.send( Measurement::ImageMeasurement(utTime, bufferImage.Clone() )  );
 		m_colorOutPort.send( Measurement::ImageMeasurement(utTime, pColorImage )  );
@@ -759,17 +768,22 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 	{
 		boost::shared_ptr< Vision::Image > pGreyImage( new Vision::Image( bufferImage.width(), bufferImage.height(), 1, IPL_DEPTH_8U));
 
-
 		if ( pColorImage ){
-			cv::cvtColor(pColorImage->uMat(), pGreyImage->uMat(), cv::COLOR_RGB2GRAY);
+			if (pColorImage->getImageState() == Image::ImageUploadState::OnCPUGPU || pColorImage->getImageState() == Image::ImageUploadState::OnGPU)
+				cv::cvtColor(pColorImage->uMat(), pGreyImage->uMat(), cv::COLOR_RGB2GRAY);
+			else
+				pGreyImage = pColorImage->CvtColor(CV_BGR2GRAY, 1);
 		}else{
-			cv::cvtColor(bufferImage.uMat(), pGreyImage->uMat(), cv::COLOR_RGB2GRAY);
+			if (bufferImage.getImageState() == Image::ImageUploadState::OnCPUGPU || bufferImage.getImageState() == Image::ImageUploadState::OnGPU)
+				cv::cvtColor(bufferImage.uMat(), pGreyImage->uMat(), cv::COLOR_RGB2GRAY);
+			else
+				pGreyImage = bufferImage.CvtColor(CV_BGR2GRAY, 1);
 		}
 
-		//FixME!
 		if ( bColorImageDistorted )
 			pGreyImage = m_undistorter->undistort( pGreyImage );
-		m_outPort.send( Measurement::ImageMeasurement( utTime, pGreyImage ) );
+
+		m_outPort.send(Measurement::ImageMeasurement(utTime, pGreyImage));
 	}
 }
 
@@ -812,15 +826,14 @@ STDMETHODIMP DirectShowFrameGrabber::SampleCB( double Time, IMediaSample *pSampl
 
 	// create IplImage, convert and send
 	Vision::Image bufferImage( m_sampleWidth, m_sampleHeight, 3, pBuffer, IPL_DEPTH_8U, 1 );
+	if (m_autoGPUUpload){
+		//force upload to the GPU
+		bufferImage.uMat();
+	}
 	Measurement::Timestamp utTime = m_syncer.convertNativeToLocal( Time );
-	static int i = 0;
-	//if(i <= 10 ){
-		LOG4CPP_INFO( logger, "handleFrame: " << i );
-		handleFrame( utTime + 1000000L * m_timeOffset, bufferImage );
-		LOG4CPP_INFO( logger, "handleFrame: " << i << "end");
-	//}
-	
-	i++;
+
+	handleFrame( utTime + 1000000L * m_timeOffset, bufferImage );
+
 	return S_OK;
 }
 
