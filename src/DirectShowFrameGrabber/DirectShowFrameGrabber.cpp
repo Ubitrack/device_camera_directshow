@@ -829,6 +829,7 @@ STDMETHODIMP DirectShowFrameGrabber::SampleCB( double Time, IMediaSample *pSampl
 	if (m_autoGPUUpload){
 		//force upload to the GPU
 		bufferImage.uMat();
+		
 	}
 	Measurement::Timestamp utTime = m_syncer.convertNativeToLocal( Time );
 
