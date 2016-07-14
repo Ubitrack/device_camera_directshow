@@ -75,6 +75,7 @@ struct __declspec(uuid("6B652FFF-11FE-4fce-92AD-0266B5D7C78F")) ISampleGrabber;
 #include <utMeasurement/Measurement.h>
 #include <utMeasurement/TimestampSync.h>
 #include <utUtil/OS.h>
+#include <utUtil/TracingProvider.h>
 #include <opencv/cv.h>
 #include <utVision/Image.h>
 #include <utVision/Undistortion.h>
@@ -342,9 +343,12 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 		m_undistorter.reset(new Vision::Undistortion(intrinsicFile, distortionFile));
 	}
 
-	if (subgraph->m_DataflowAttributes.hasAttribute("uploadImageOnGPU")){
-		m_autoGPUUpload = subgraph->m_DataflowAttributes.getAttributeString("uploadImageOnGPU") == "true";
-		LOG4CPP_INFO(logger, "Upload to GPU enabled? " << m_autoGPUUpload);
+	Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
+	if (oclManager.isEnabled()) {
+		if (subgraph->m_DataflowAttributes.hasAttribute("uploadImageOnGPU")){
+			m_autoGPUUpload = subgraph->m_DataflowAttributes.getAttributeString("uploadImageOnGPU") == "true";
+			LOG4CPP_INFO(logger, "Upload to GPU enabled? " << m_autoGPUUpload);
+		}
 	}
 
 	// dynamically generate input ports
@@ -733,6 +737,17 @@ void DirectShowFrameGrabber::initGraph()
 
 void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision::Image& bufferImage )
 {
+
+#ifdef ENABLE_EVENT_TRACING
+	TRACEPOINT_MEASUREMENT_CREATE(getEventDomain(), utTime, getName().c_str(), "VideoCapture")
+#endif
+
+	if (m_autoGPUUpload){
+		//force upload to the GPU
+		bufferImage.uMat();
+
+	}
+
 	boost::shared_ptr< Vision::Image > pColorImage;
 	bool bColorImageDistorted = true;
 	
@@ -826,11 +841,6 @@ STDMETHODIMP DirectShowFrameGrabber::SampleCB( double Time, IMediaSample *pSampl
 
 	// create IplImage, convert and send
 	Vision::Image bufferImage( m_sampleWidth, m_sampleHeight, 3, pBuffer, IPL_DEPTH_8U, 1 );
-	if (m_autoGPUUpload){
-		//force upload to the GPU
-		bufferImage.uMat();
-		
-	}
 	Measurement::Timestamp utTime = m_syncer.convertNativeToLocal( Time );
 
 	handleFrame( utTime + 1000000L * m_timeOffset, bufferImage );
