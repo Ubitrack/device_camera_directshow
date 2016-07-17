@@ -807,7 +807,6 @@ STDMETHODIMP DirectShowFrameGrabber::SampleCB( double Time, IMediaSample *pSampl
 {
 	// TODO: check for double frames when using multiple cameras...
 	LOG4CPP_DEBUG( logger, "SampleCB called" );
-	//LOG4CPP_INFO( logger, "SampleCB callled: " << Ubitrack::Vision::OpenCLManager::singleton().isInitialized());
 	if(!Ubitrack::Vision::OpenCLManager::singleton().isInitialized())
 	{
 		LOG4CPP_INFO( logger, "skipping frame; OpenCL Manager not initialized");
@@ -841,6 +840,8 @@ STDMETHODIMP DirectShowFrameGrabber::SampleCB( double Time, IMediaSample *pSampl
 
 	// create IplImage, convert and send
 	Vision::Image bufferImage( m_sampleWidth, m_sampleHeight, 3, pBuffer, IPL_DEPTH_8U, 1 );
+	bufferImage.set_pixelFormat(Vision::Image::BGR);
+
 	Measurement::Timestamp utTime = m_syncer.convertNativeToLocal( Time );
 
 	handleFrame( utTime + 1000000L * m_timeOffset, bufferImage );
