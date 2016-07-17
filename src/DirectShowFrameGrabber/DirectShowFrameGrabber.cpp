@@ -755,8 +755,8 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 		( bufferImage.width() > m_desiredWidth || bufferImage.height() > m_desiredHeight ) )
 	{
 		pColorImage.reset( new Vision::Image( m_desiredWidth, m_desiredHeight, 3 ) );
-		pColorImage->iplImage()->origin = bufferImage.origin();
-		cvResize( bufferImage, *pColorImage );
+		pColorImage->set_origin(bufferImage.origin());
+		cv::resize( bufferImage.Mat(), pColorImage->Mat(), cv::Size(m_desiredWidth, m_desiredHeight) );
 	}
 	
 	if (m_outPortRAW.isConnected()) {
