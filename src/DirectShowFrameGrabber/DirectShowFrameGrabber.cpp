@@ -807,11 +807,11 @@ STDMETHODIMP DirectShowFrameGrabber::SampleCB( double Time, IMediaSample *pSampl
 {
 	// TODO: check for double frames when using multiple cameras...
 	LOG4CPP_DEBUG( logger, "SampleCB called" );
-	if(!Ubitrack::Vision::OpenCLManager::singleton().isInitialized())
-	{
-		LOG4CPP_INFO( logger, "skipping frame; OpenCL Manager not initialized");
-		return S_OK;
-	}
+	//if(!Ubitrack::Vision::OpenCLManager::singleton().isInitialized())
+	//{
+	//	LOG4CPP_INFO( logger, "skipping frame; OpenCL Manager not initialized");
+	//	return S_OK;
+	//}
 
 	if ( Time == m_lastTime )
 	{
