@@ -755,7 +755,7 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 		( bufferImage.width() > m_desiredWidth || bufferImage.height() > m_desiredHeight ) )
 	{
 		pColorImage.reset( new Vision::Image( m_desiredWidth, m_desiredHeight, 3 ) );
-		pColorImage->set_origin(bufferImage.origin());
+		pColorImage->copyImageFormatFrom(bufferImage);
 		cv::resize( bufferImage.Mat(), pColorImage->Mat(), cv::Size(m_desiredWidth, m_desiredHeight) );
 	}
 	
@@ -775,6 +775,7 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 		//LOG4CPP_INFO( logger, "senind color image" );
 		//fixme
 		//m_colorOutPort.send( Measurement::ImageMeasurement(utTime, bufferImage.Clone() )  );
+		
 		m_colorOutPort.send( Measurement::ImageMeasurement(utTime, pColorImage )  );
 	}
 
@@ -797,6 +798,8 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 
 		if ( bColorImageDistorted )
 			pGreyImage = m_undistorter->undistort( pGreyImage );
+		
+		
 
 		m_outPort.send(Measurement::ImageMeasurement(utTime, pGreyImage));
 	}
@@ -843,6 +846,8 @@ STDMETHODIMP DirectShowFrameGrabber::SampleCB( double Time, IMediaSample *pSampl
 	bufferImage.set_pixelFormat(Vision::Image::BGR);
 
 	Measurement::Timestamp utTime = m_syncer.convertNativeToLocal( Time );
+
+	
 
 	handleFrame( utTime + 1000000L * m_timeOffset, bufferImage );
 
