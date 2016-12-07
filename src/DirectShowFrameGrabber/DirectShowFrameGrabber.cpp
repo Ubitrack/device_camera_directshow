@@ -349,6 +349,10 @@ DirectShowFrameGrabber::DirectShowFrameGrabber( const std::string& sName, boost:
 			m_autoGPUUpload = subgraph->m_DataflowAttributes.getAttributeString("uploadImageOnGPU") == "true";
 			LOG4CPP_INFO(logger, "Upload to GPU enabled? " << m_autoGPUUpload);
 		}
+		if (m_autoGPUUpload){
+			oclManager.activate();
+			LOG4CPP_INFO(logger, "Require OpenCLManager");
+		}
 	}
 
 	// dynamically generate input ports
@@ -743,8 +747,11 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 #endif
 
 	if (m_autoGPUUpload){
-		//force upload to the GPU
-		bufferImage.uMat();
+		Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
+		if (oclManager.isInitialized()) {
+			//force upload to the GPU
+			bufferImage.uMat();
+		}
 
 	}
 
