@@ -121,6 +121,9 @@ public:
 	/** starts the camera */
 	void start();
 
+	/** starts the capturing */
+	void startCapturing();
+
 	/** stops the camera */
 	void stop();
 
@@ -389,12 +392,25 @@ DirectShowFrameGrabber::~DirectShowFrameGrabber()
 
 void DirectShowFrameGrabber::start()
 {
-	if ( !m_running && m_pMediaControl )
-		m_pMediaControl->Run();
-
+	if ( !m_running ) {
+		if (m_autoGPUUpload) {
+			LOG4CPP_INFO(logger, "Waiting for OpenCLManager initialization callback.");
+			Vision::OpenCLManager& oclManager = Vision::OpenCLManager::singleton();
+			oclManager.registerInitCallback(boost::bind(&DirectShowFrameGrabber::startCapturing, this));
+		}
+		else {
+			startCapturing();
+		}
+		m_running = true;
+	}
 	Component::start();
 }
 
+void DirectShowFrameGrabber::startCapturing()
+{
+	if ( m_pMediaControl )
+		m_pMediaControl->Run();
+}
 
 void DirectShowFrameGrabber::stop()
 {
@@ -757,11 +773,14 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 
 	boost::shared_ptr< Vision::Image > pColorImage;
 	bool bColorImageDistorted = true;
+
+	Vision::Image::ImageFormatProperties fmt;
 	
 	if ( ( m_desiredWidth > 0 && m_desiredHeight > 0 ) && 
 		( bufferImage.width() > m_desiredWidth || bufferImage.height() > m_desiredHeight ) )
 	{
-		pColorImage.reset( new Vision::Image( m_desiredWidth, m_desiredHeight, 3 ) );
+		bufferImage.getFormatProperties(fmt);
+		pColorImage.reset( new Vision::Image( m_desiredWidth, m_desiredHeight, fmt ) );
 		pColorImage->copyImageFormatFrom(bufferImage);
 		cv::resize( bufferImage.Mat(), pColorImage->Mat(), cv::Size(m_desiredWidth, m_desiredHeight) );
 	}
@@ -789,7 +808,14 @@ void DirectShowFrameGrabber::handleFrame( Measurement::Timestamp utTime, Vision:
 	
 	if ( m_outPort.isConnected() )
 	{
-		boost::shared_ptr< Vision::Image > pGreyImage( new Vision::Image( bufferImage.width(), bufferImage.height(), 1, IPL_DEPTH_8U));
+
+		bufferImage.getFormatProperties(fmt);
+		fmt.imageFormat = Vision::Image::LUMINANCE;
+		fmt.channels = 1;
+		fmt.bitsPerPixel = 8;
+
+		// @todo remove unnecessary allocation if image is on gpu .. and refactor this mess here ..
+		boost::shared_ptr< Vision::Image > pGreyImage( new Vision::Image( bufferImage.width(), bufferImage.height(), fmt));
 
 		if ( pColorImage ){
 			if (pColorImage->getImageState() == Image::ImageUploadState::OnCPUGPU || pColorImage->getImageState() == Image::ImageUploadState::OnGPU)
@@ -848,13 +874,17 @@ STDMETHODIMP DirectShowFrameGrabber::SampleCB( double Time, IMediaSample *pSampl
 	}
 	
 
-	// create IplImage, convert and send
-	Vision::Image bufferImage( m_sampleWidth, m_sampleHeight, 3, pBuffer, IPL_DEPTH_8U, 1 );
-	bufferImage.set_pixelFormat(Vision::Image::BGR);
+	// create Image, convert and send
+	Vision::Image::ImageFormatProperties fmt;
+	fmt.imageFormat = Vision::Image::BGR;
+	fmt.channels = 3;
+	fmt.depth = CV_8U;
+	fmt.bitsPerPixel = 24;
+	fmt.origin = 1;
+
+	Vision::Image bufferImage( m_sampleWidth, m_sampleHeight, fmt, pBuffer);
 
 	Measurement::Timestamp utTime = m_syncer.convertNativeToLocal( Time );
-
-	
 
 	handleFrame( utTime + 1000000L * m_timeOffset, bufferImage );
 
