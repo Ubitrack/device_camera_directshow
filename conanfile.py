@@ -5,7 +5,7 @@ class UbitrackCoreConan(ConanFile):
     name = "ubitrack_device_camera_directshow"
     version = "1.3.0"
 
-    description = "Ubitrack Device Tracker ART"
+    description = "Ubitrack Device Camera DirectShow"
     url = "https://github.com/Ubitrack/device_camera_directshow.git"
     license = "GPL"
 
@@ -26,7 +26,7 @@ class UbitrackCoreConan(ConanFile):
         )
 
     # all sources are deployed with the package
-    exports_sources = "cmake", "doc/*", "src/*", "CMakeLists.txt"
+    exports_sources = "cmake/*", "doc/*", "src/*", "CMakeLists.txt"
 
     def imports(self):
         self.copy(pattern="*.dll", dst="bin", src="bin") # From bin to bin
