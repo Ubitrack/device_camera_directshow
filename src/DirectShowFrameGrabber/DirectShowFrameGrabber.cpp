@@ -543,7 +543,7 @@ void DirectShowFrameGrabber::initGraph()
 		pStreamConfig->GetNumberOfCapabilities( &iCount, &iSize );
 		boost::scoped_array< BYTE > buf( new BYTE[ iSize ] );
 
-		bool bSet = false;
+    float fCurrentFps = 0;
 		for ( int iCap = 0; iCap < iCount; iCap++ )
 		{
 			AM_MEDIA_TYPE *pMediaType;
@@ -552,20 +552,20 @@ void DirectShowFrameGrabber::initGraph()
 			if ( pMediaType->majortype != MEDIATYPE_Video || pMediaType->formattype != FORMAT_VideoInfo )
 				continue;
 			VIDEOINFOHEADER* pInfo = (VIDEOINFOHEADER*)pMediaType->pbFormat;
+      float fMediaTypeFps = 1e7 / pInfo->AvgTimePerFrame;
 
-			LOG4CPP_INFO( logger, "Media type: fps=" << 1e7 / pInfo->AvgTimePerFrame << 
+      LOG4CPP_INFO(logger, "Media type: fps=" << fMediaTypeFps <<
 				", width=" << pInfo->bmiHeader.biWidth << ", height=" << pInfo->bmiHeader.biHeight <<
 				", type=" << ( pMediaType->subtype == MEDIASUBTYPE_RGB24 ? "RGB24" : "?" ) );
 
+      
 			// set first format with correct size, but prefer RGB24 
 			if ( ( m_desiredWidth <= 0 || pInfo->bmiHeader.biWidth == m_desiredWidth ) && 
 				( m_desiredHeight <= 0 || pInfo->bmiHeader.biHeight == m_desiredHeight ) &&
-				( !bSet || pMediaType->subtype == MEDIASUBTYPE_RGB24 ) )
+        ( pMediaType->subtype == MEDIASUBTYPE_RGB24 || fCurrentFps < fMediaTypeFps))
 			{
 				pStreamConfig->SetFormat( pMediaType );
-				if ( bSet )
-					break;
-				bSet = true;
+        fCurrentFps = 1e7 / pInfo->AvgTimePerFrame;
 			}
 
 			// TODO: DeleteMediaType
