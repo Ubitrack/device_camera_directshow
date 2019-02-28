@@ -77,7 +77,21 @@ if(MSVC_VERSION GREATER 1310) # Newer than VS .NET/VS Toolkit 2003
 				"${_sdkdir}")
 		endif()
 	endforeach()
+  
+  SET(_sdkdir "C://Program Files (x86)//Windows Kits//8.0")
+	list(APPEND _win_sdk_dirs "${_sdkdir}")
+	list(APPEND	_win_sdk_versanddirs "Windows SDK 8.0" "${_sdkdir}")
+  
+  SET(_sdkdir "C://Program Files (x86)//Windows Kits//8.1")
+	list(APPEND _win_sdk_dirs "${_sdkdir}")
+	list(APPEND	_win_sdk_versanddirs "Windows SDK 8.1" "${_sdkdir}")
+  
+  SET(_sdkdir "C://Program Files (x86)//Windows Kits//10")
+	list(APPEND _win_sdk_dirs "${_sdkdir}")
+	list(APPEND	_win_sdk_versanddirs "Windows SDK 10" "${_sdkdir}")
+		
 endif()
+
 if(MSVC_VERSION GREATER 1200)
 	foreach(_platformsdkinfo
 		"D2FF9F89-8AA2-4373-8A31-C838BF4DBBE1_Microsoft Platform SDK for Windows Server 2003 R2"

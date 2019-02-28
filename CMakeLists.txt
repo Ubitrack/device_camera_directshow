@@ -9,16 +9,10 @@ IF(WIN32)
 		add_definitions(-DHAVE_DIRECTSHOW)
 	ENDIF(DIRECTSHOW_FOUND)
 
-	FIND_PACKAGE(DirectX)
-	IF(DIRECTX_FOUND)
+	IF(DIRECTSHOW_FOUND)
 		ut_component_include_directories("src/DirectShowFrameGrabber" ${TINYXML_INCLUDE_DIR} ${LOG4CPP_INCLUDE_DIR} ${BOOSTBINDINGS_INCLUDE_DIR} ${LAPACK_INCLUDE_DIR} ${Boost_INCLUDE_DIR} ${OPENCV_INCLUDE_DIR} ${DIRECTSHOW_INCLUDE_DIRS})
 		ut_glob_component_sources(HEADERS "src/DirectShowFrameGrabber/*.h" SOURCES "src/DirectShowFrameGrabber/*.cpp")
 		ut_create_single_component(${DIRECTSHOW_STRMIIDS_LIBRARY})
 		ut_install_utql_patterns()
-
-	ELSE(DIRECTX_FOUND)
-		MESSAGE(WARN " DirectX was not found - disable device_camera_directshow driver")
-		SET(BUILD_DirectShowFrameGrabber OFF CACHE BOOL "Build DirectShowFrameGrabber deactivated" FORCE)
-	ENDIF(DIRECTX_FOUND)
-
+  ENDIF()
 ENDIF(WIN32)
